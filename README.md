@@ -1,3 +1,7 @@
+URL
+mainにマージされると下記URLに反映されます
+https://akagoshima-poster.netlify.app/
+
 # poster-map
 ## アプリケーション概要
 * 選挙の際にポスターを貼るべき看板の位置を登録し、自陣営のポスター貼付け状況を管理できるシステムです
