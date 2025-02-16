@@ -36,6 +36,7 @@ sudo apt install python3-pandas
         - public以下すべて
     * index.htmlは必要に応じて編集すること
 * netlifyで「Add new site」を行い、↑のリポジトリからの自動デプロイを設定する
+    * index.htmlなどのデザインや表記を変更し、コミットしたものがサイトに反映されたかを確認するのが簡単
 
 ## 設定ファイル化するまでの暫定
 * public/scripts/summary.js
@@ -55,3 +56,25 @@ sudo apt install python3-pandas
 curl -sL "{ウェブアプリのURL}?sheetName={シート名}" > test.csv
 ```
 * test.csvの中身を確認し、public/data/all.csvのフォーマット、文字コードと同じかどうかを確認する
+
+## 動作確認
+* main.shの必要なコマンドを１つずつ実行していく
+```sh
+cd {カレントディレクトリ}
+# グーグルスプレッドシートからcsvをダウンロード
+curl -sL "{ウェブアプリのURL}?sheetName={シート名}" > public/data/all.csv
+
+# 掲示板データをJSON出力＆エリアごとに分割
+python3 csv2json_small.py public/data/all.csv public/data/
+
+# 完了率のJSON出力
+python3 summarize_progress.py ./public/data/summary.json
+
+# 未完了数をJSON出力
+python3 summarize_progress_absolute.py ./public/data/summary_absolute.json
+
+```
+* 作成されたJSONファイルを確認する
+    * public/data直下
+    * public/data/block はブロックごと
+* 自動デプロイされたサイトを確認する
