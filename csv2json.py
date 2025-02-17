@@ -1,9 +1,11 @@
+# エリアリストをjsonに変換
+
 import pandas as pd
 import json
 
-csv_file_path = 'input.csv'
+csv_file_path = 'arealist.csv'
 
-json_file_path = 'output.json'
+json_file_path = 'arealist.json'
 
 df = pd.read_csv(csv_file_path)
 
