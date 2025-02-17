@@ -12,8 +12,8 @@ print(df)
 result = (
     df.groupby(['area_id'])
     .apply(lambda group:{
-        "area_name": group.name[0],
-        "area_block": group.name[1]
+        "area_name": group.area_id[0],
+        "area_block": group.area_id[1]
     })
     .tolist()
 )
