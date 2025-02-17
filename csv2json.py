@@ -10,7 +10,7 @@ df = pd.read_csv(csv_file_path)
 print(df)
 
 result = (
-    df.groupby(['area_id'])
+    df.groupby(['area_block'])
     .apply(lambda group:{
         "area_name": group.name[0],
         "area_block": group.name[1]
