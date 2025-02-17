@@ -7,10 +7,9 @@ json_file_path = 'output.json'
 
 df = pd.read_csv(csv_file_path)
 
+df = df.set_index('area_id')
+
 json_data = df.to_json(orient='index',force_ascii=False)
-
-print(json_data)
-
 
 with open(json_file_path, mode='w', encoding='utf-8') as json_file:
     json_file.write(json_data)
