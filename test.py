@@ -30,7 +30,7 @@ all_areas = pd.DataFrame(area_mapping.items(), columns=['area', 'area_id'])
 
 
 merged_df = all_areas.merge(status_counts, on='area', how='left')
-
+merged_df = merged_df.fillna(0)
 print(merged_df)
 
 merged_df['progress'] = merged_df['progress'].fillna(0)
