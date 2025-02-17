@@ -13,8 +13,7 @@ result = (
     df.groupby(['area_id'])
     .apply(lambda group:{
         "area_name": group.name[0],
-        "area_block": group.name[1],
-
+        "area_block": group.name[1]
     })
     .tolist()
 )
