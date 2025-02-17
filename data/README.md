@@ -17,7 +17,7 @@ area_id,area_name,area_block
 https://uedayou.net/loa/ から市区町村を取ると確実にマッピングされるよ
 
 ## arealist.json
-csv2json.pyで変換して作成
+make_arealist.pyで変換して作成
 
 ## all.csv(ピンデータ)
 area,name,lat,long,status,note
