@@ -8,10 +8,10 @@ json_file_path = 'output.json'
 df = pd.read_csv(csv_file_path)
 
 result = (
-    df.groupby(['dept_id', 'dept_name'])
+    df.groupby(['area_id,'])
     .apply(lambda group:{
-        "dept_id": group.name[0],
-        "dept_name": group.name[1],
+        "area_name": group.name[0],
+        "area_block": group.name[1],
 
     })
     .tolist()
