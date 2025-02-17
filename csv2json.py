@@ -10,10 +10,10 @@ df = pd.read_csv(csv_file_path)
 print(df)
 
 result = (
-    df.apply(lambda group:{
+    df.groupby(['area_id'])
+    .apply(lambda group:{
         "area_name": group.name[0],
-        "area_block": group.name[1],
-        "etc": group.area_name[0]
+        "area_block": group.name[1]
     })
     .tolist()
 )
