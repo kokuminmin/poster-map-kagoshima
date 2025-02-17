@@ -7,6 +7,7 @@ json_file_path = 'output.json'
 
 df = pd.read_csv(csv_file_path)
 
+df.groupby(['area_block'])
 print(df)
 
 result = (
