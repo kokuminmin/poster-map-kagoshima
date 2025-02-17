@@ -28,13 +28,15 @@ overall_progress = len(all_df) - (
 area_mapping = dict(zip(arealist_df['area_name'], arealist_df['area_id']))
 all_areas = pd.DataFrame(area_mapping.items(), columns=['area', 'area_id'])
 
-
 merged_df = all_areas.merge(status_counts, on='area', how='left')
 merged_df = merged_df.fillna(0)
 print(merged_df)
+exit
+
 
 merged_df['progress'] = merged_df['progress'].fillna(0)
 merged_df = merged_df[['area_id', 'progress']].sort_values(by='area_id')
+
 
 result_dict = { "{}".format(row['area_id']): "{}".format(row['progress']) for _, row in merged_df.iterrows()}
 result_dict['total'] = "{}".format(overall_progress)
