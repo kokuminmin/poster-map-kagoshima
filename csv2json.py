@@ -9,21 +9,9 @@ df = pd.read_csv(csv_file_path)
 
 print(df)
 
-result = (
-    df.groupby(['area_id'])
-    .apply(lambda group:{
-        "area_name": group.area_id[0],
-        "area_block": group.area_id[1]
-    })
-    .tolist()
-)
+json_data = df.to_json(orient='index')
 
-print(result)
+with open(json_file_path, mode='w', encoding='utf-8') as json_file:
+    json.dump(json_data, json_file, ensure_ascii=False, indent=4)
 
-exit
-
-#with open(json_file_path, mode='w', encoding='utf-8') as json_file:
-#    json.dump(result, json_file, ensure_ascii=False, indent=4)
-#
-#print(f"JSON 生成: {json_file_path}")
-
+print("CSVからJSONに変換が完了しました！")
