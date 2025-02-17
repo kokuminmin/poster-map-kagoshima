@@ -7,11 +7,10 @@ json_file_path = 'output.json'
 
 df = pd.read_csv(csv_file_path)
 
-df.groupby(['area_block'])
 print(df)
 
+#    df.groupby(['area_block'])
 result = (
-    df.groupby(['area_block'])
     .apply(lambda group:{
         "area_name": group.name[0],
         "area_block": group.name[1]
