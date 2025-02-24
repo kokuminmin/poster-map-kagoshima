@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # 定数の定義
-BASE_DIR=~/poster-map/poster-map-kagoshima/
+BASE_DIR=~/poster-map/poster-map-kagoshima-release/
 DATA_DIR=public/data
 GCS_URL="https://script.google.com/macros/s/AKfycbyjKhFSnV0WAizpm7bi19AAdHtJBQoqHsiETTk7zHhgX8muK_xVW7O_zcJYVFfKK48/exec"
 
