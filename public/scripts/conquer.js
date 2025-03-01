@@ -1,12 +1,3 @@
-const map = L.map("map").setView([35.669400214188606, 139.48343915372877], 11);
-
-// 背景地図はOpenStreetMap
-const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Linked Open Addresses Japan',
-}).addTo(map);
-
 function legend() {
   var control = L.control({ position: 'topright' });
   control.onAdd = function () {
@@ -65,6 +56,140 @@ function getProgressColor(value) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function replaceNullWithDefaultValues(data) {
+  for (let i = 1; i <= 5; i++) {
+    const groupKey = `group${i}`;
+    const noteKey = `group${i}_note`;
+    if (data[groupKey] === null) { data[groupKey] = 0;}
+    if (data[noteKey] === null) { data[noteKey] = "";}
+  }
+}
+
+function setPolygonPopup(polygon, conquer, group) {
+  let popupContent = `<b>${conquer['subarea_name']}</b><br>`;
+  popupContent += `トータル: ${conquer['total_posting']}枚<br>`;
+  if (group != 'Total') {
+    popupContent += `${group}: ${conquer[group]}枚<br>備考:${conquer[`${group}_note`]}<br>`;
+  }
+  polygon.bindPopup(popupContent);
+}
+
+function setMarkerWithTooltip(lat, lng, areaName, areaKey, areaId, totalPosting) { //全体マップの描画
+  const marker = L.marker([lat, lng]).addTo(map);
+
+  const tooltipContent = `
+  <div style="text-align: center;">
+    <strong>${areaName}</strong><br>
+    <span style="font-size: 12px; color: gray;"> ${totalPosting} 枚</span>
+  </div>
+`;
+
+  marker.bindTooltip(tooltipContent, {
+    permanent: true,
+    direction: 'bottom',
+    offset: [-15, 40],
+    className: "custom-tooltip"
+  }).openTooltip();
+
+  marker.on('click', function () {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('area_key', areaKey);
+    currentUrl.searchParams.set('area_id', areaId);
+    currentUrl.searchParams.set('lat', lat);
+    currentUrl.searchParams.set('lng', lng);
+    window.location.href = currentUrl.toString();
+  });
+}
+
+
+function fetchGeoJsonAndSetView(pref, zoomLevel) {
+  const geoPrefUrl = `https://uedayou.net/loa/${pref}.geojson`;
+  
+  return fetch(geoPrefUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch geojson for ${pref}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const polygon = L.geoJSON(data);
+      const centroid = polygon.getBounds().getCenter();
+      map.setView([centroid.lat, centroid.lng], 11);
+    })
+    .catch((error) => {
+      console.error('Error fetching geojson:', error);
+    });
+}
+
+function getGroupGeoJsonStyle(value, group) { // 塗りつぶしマップのスタイルを決める
+  const styles = {
+    group1: { color: '#E63946', fillColor: '#E63946', fillOpacity: 0.1, weight: 1 }, // 赤
+    group2: { color: '#457B9D', fillColor: '#457B9D', fillOpacity: 0.1, weight: 1 }, // 青
+    group3: { color: '#2A9D8F', fillColor: '#2A9D8F', fillOpacity: 0.1, weight: 1 }, // 緑
+    group4: { color: '#F4A261', fillColor: '#F4A261', fillOpacity: 0.1, weight: 1 }, // オレンジ
+    group5: { color: '#9B5DE5', fillColor: '#9B5DE5', fillOpacity: 0.1, weight: 1 }, // 紫
+  };
+
+  return styles[group] || { 
+    color: 'black', 
+    fillColor: getProgressColor(value), 
+    fillOpacity: 0.4, 
+    weight: 2 
+  };
+}
+
+function fetchAndProcessGeoJson(dataSet, isDetailView) {
+  for (let [key, data] of Object.entries(dataSet)) {
+    const areaName = isDetailView ? data['subarea_name'] : data['area_name'];
+    const areaKey = isDetailView ? null : data['area_key']; // 詳細ビューでは areaKey は不要
+    const areaId = isDetailView ? null : data['area_id']; // 詳細ビューでは areaId は不要
+    const totalValue = isDetailView ? data['total_posting'] : conquerareatotal[data['area_id']];
+    
+    const geoJsonUrl = `https://uedayou.net/loa/${pref}${areaName}.geojson`;
+    if (isDetailView) {
+      replaceNullWithDefaultValues(data);
+    }
+
+    fetch(geoJsonUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch geojson for ${areaName}`);
+        }
+        return response.json();
+      })
+      .then((geoData) => {
+
+        let groups = ['Total']; // 'Total' はデフォルトで追加
+        for (let i = 1; i <= 5; i++) {
+          let groupx = `group${i}`;
+          if (data[groupx] !== 0) { groups.push(groupx); }
+        }
+
+        if (isDetailView) {
+          //境界線はmapに書き込む
+          const polygon = L.geoJSON(geoData, { style: {color:'black', weight:1,fillOpacity:0,}});
+          polygon.bindPopup(data['subarea_name']);/*`<b>${conquer['subarea_name']}</b><br>`;*/
+          polygon.addTo(map);
+          groups.forEach(group => {
+            const polygon = L.geoJSON(geoData, { style: getGroupGeoJsonStyle(totalValue, group) });
+            setPolygonPopup(polygon, data, group);
+            polygon.addTo(overlays[group]);
+          });
+        } else {
+          const polygon = L.geoJSON(geoData, { style: getGroupGeoJsonStyle(totalValue, 'Total') });
+          polygon.addTo(map);
+          const centroid = polygon.getBounds().getCenter();
+          setMarkerWithTooltip(centroid.lat, centroid.lng, areaName, areaKey, areaId, totalValue);
+        }
+
+      })
+      .catch((error) => {
+        console.error('Error fetching geojson:', error);
+      });
+  }
+}
+
 function getGeoJsonStyle(value) {
   return {
     color: 'black',
@@ -79,6 +204,27 @@ function getParamFromUrl(paramName) {
   return params.get(paramName);
 }
 
+var map = L.map("map", { preferCanvas: true, zoomControl: false }).setView([35.669400214188606, 139.48343915372877], 11);
+
+const baseLayers = {
+  'OpenStreetMap': osm,
+  'Google Map': googleMap,
+  '国土地理院地図': japanBaseMap,
+};
+
+const overlays = {
+  'group1':  L.layerGroup(),
+  'group2':  L.layerGroup(),
+  'group3':  L.layerGroup(),
+  'group4':  L.layerGroup(),
+  'group5':  L.layerGroup(),
+  'Total':  L.layerGroup(),
+};
+
+japanBaseMap.addTo(map);
+map.addLayer(overlays['Total']);
+let layerControl = L.control.layers(baseLayers, overlays, { position: "topleft" }).addTo(map);
+
 let areaList;
 let progress;
 const area_key = getParamFromUrl("area_key");
@@ -92,85 +238,23 @@ Promise.all([getConquerblock(), getConquerdata(area_key), getConquerareatotal()]
   conquerdata = res[1];
   conquerareatotal = res[2];
 
+  let areaTotalValue;
   if (area_key === null) {
-    // area_keyが定義されていない場合、全体マップ（ポリゴンによる描写とクリックしてリンク先に飛ぶ）を表示する
-    // 都道府県の中心地を取得して移動
-    const geoPrefUrl = `https://uedayou.net/loa/${pref}.geojson`;
-    fetch(geoPrefUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to fetch geojson for ${blockdata['area_name']}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const polygon = L.geoJSON(data);
-        const centroid = polygon.getBounds().getCenter();  // ポリゴンの境界ボックスの中心を取得
-        map.setView([centroid.lat, centroid.lng], 11);
-      })
-      .catch((error) => {
-        console.error('Error fetching geojson:', error);
-      });
-    for (let [key, blockdata] of Object.entries(conquerblock)) {
-      const geoJsonUrl = `https://uedayou.net/loa/${pref}${blockdata['area_name']}.geojson`;
-      fetch(geoJsonUrl)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch geojson for ${blockdata['area_name']}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const polygon = L.geoJSON(data, {
-            style: getGeoJsonStyle(conquerareatotal[blockdata['area_id']]),
-          });
-          const centroid = polygon.getBounds().getCenter();  // ポリゴンの境界ボックスの中心を取得
-          const marker = L.marker([centroid.lat, centroid.lng]).addTo(map);
-          marker.bindTooltip(blockdata['area_name'], { permanent: true, direction: 'bottom', offset: [-15, 40] }).openTooltip();
-
-          // マーカーをクリックして詳細マップへ
-          marker.on('click', function () {
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('area_key', blockdata['area_key']);
-            currentUrl.searchParams.set('area_id', blockdata['area_id']);
-            currentUrl.searchParams.set('lat', centroid.lat);
-            currentUrl.searchParams.set('lng', centroid.lng);
-            window.location.href = currentUrl.toString();
-          })
-          polygon.addTo(map);
-        })
-        .catch((error) => {
-          console.error('Error fetching geojson:', error);
-        });
-    }
-    areatotalBox((conquerareatotal['total'] ), 'topright').addTo(map)
-    legend().addTo(map);
+    // area_keyが定義されていない場合、全体マップ
+    map.removeControl(layerControl); // 既存のレイヤーコントロールを削除
+    layerControl = L.control.layers(baseLayers, {}, { position: "topleft" }).addTo(map); // overlaysなしで再作成
+    fetchGeoJsonAndSetView(pref, 11); // 都道府県の中心地を取得して移動
+    areaTotalValue = conquerareatotal['total']; // 全体データ
+    fetchAndProcessGeoJson(conquerblock, false);
   } else {
     // area_keyが定義されている場合、詳細マップ(ポスター枚数による塗分け)を表示する
     map.setView([lat, lng], 14);
-    for (let [key, conquer] of Object.entries(conquerdata)) {
-      const geoJsonUrl = `https://uedayou.net/loa/${pref}${conquer['subarea_name']}.geojson`;
-      fetch(geoJsonUrl)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch geojson for ${conquer['subarea_name']}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const polygon = L.geoJSON(data, {
-            style: getGeoJsonStyle(conquer['total_posting']),
-          });
-          polygon.bindPopup(`<b>${conquer['subarea_name']}</b><br>トータル: ${conquer['total_posting']}枚<br>最近: ${conquer['recently_posting']}枚`);
-          polygon.addTo(map);
-        })
-        .catch((error) => {
-          console.error('Error fetching geojson:', error);
-        });
-    }
-    areatotalBox((conquerareatotal[area_id]), 'topright').addTo(map)
-    legend().addTo(map);
+    areaTotalValue = conquerareatotal[area_id]; // 特定エリアのデータ
+    fetchAndProcessGeoJson(conquerdata, true);
   }
+  //マップ合計と凡例を表示
+  areatotalBox(areaTotalValue, 'topright').addTo(map)
+  legend().addTo(map);
 
 }).catch((error) => {
   console.error('Error in fetching data:', error);
