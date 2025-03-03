@@ -14,6 +14,9 @@ git pull
 # posting map data download
 curl -sL "$GCS_URL?sheetName=postingmapdata" > "$DATA_DIR/conquerlist.csv"
 
+# posting log data backup
+curl -sL "$GCS_URL?sheetName=postinglog" > "backup/postinglog.csv"
+
 # ポスティングデータをblockごとに分割
 python3 bin/conquercsv2json_small.py "$DATA_DIR/conquerlist.csv" "$DATA_DIR/conquerblock.csv" "$DATA_DIR"
 
